@@ -10,12 +10,16 @@ import { User } from './user.schema';
 import { Model } from 'mongoose';
 import { AuthDto } from './dto/auth.dto';
 import * as bcrypt from 'bcryptjs';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private jwtService: JwtService,
+  ) {}
 
-  async signUp(authCredentials: AuthDto): Promise<User> {
+  async signUp(authCredentials: AuthDto): Promise<void> {
     try {
       const user = new this.userModel(authCredentials);
       const salt = await bcrypt.genSalt();
@@ -24,7 +28,7 @@ export class AuthService {
         authCredentials.password,
         user.salt,
       );
-      return user.save();
+      await user.save();
     } catch (error) {
       if (error.code === 11000) {
         throw new ConflictException('Username already exists');
@@ -37,7 +41,7 @@ export class AuthService {
     return bcrypt.hash(password, salt);
   }
 
-  async signIn(authCredentials: AuthDto): Promise<User> {
+  async signIn(authCredentials: AuthDto): Promise<{ accessToken: string }> {
     const user = await this.userModel.findOne({
       username: authCredentials.username,
     });
@@ -46,7 +50,11 @@ export class AuthService {
         authCredentials.password,
         user,
       );
-      if (isValidPassword) return user;
+      if (isValidPassword) {
+        const payload = { username: authCredentials.username };
+        const accessToken = await this.jwtService.sign(payload);
+        return { accessToken };
+      }
       throw new UnauthorizedException('Invalid Credentials');
     }
     throw new NotFoundException('User not found');
