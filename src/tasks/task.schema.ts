@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import { TaskStatus } from './task-status.enum';
 
 export type TaskDocument = HydratedDocument<Task>;
@@ -14,6 +14,9 @@ export class Task {
 
   @Prop()
   status: TaskStatus;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  userId;
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);

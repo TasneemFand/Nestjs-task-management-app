@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -25,8 +26,8 @@ export class TasksController {
   constructor(private tasksService: TasksService) {}
 
   @Get()
-  getTasks(@Query(ValidationPipe) filter: TasksFilterDto) {
-    return this.tasksService.getTasks(filter);
+  getTasks(@Query(ValidationPipe) filter: TasksFilterDto, @Req() req) {
+    return this.tasksService.getTasks(filter, req.user);
   }
 
   @Get('/:id')
@@ -36,8 +37,8 @@ export class TasksController {
 
   @Post()
   @UsePipes(ValidationPipe)
-  createTask(@Body() createTaskDto: CreateTaskDto): Promise<Task> {
-    return this.tasksService.createTask(createTaskDto);
+  createTask(@Body() createTaskDto: CreateTaskDto, @Req() req): Promise<Task> {
+    return this.tasksService.createTask(createTaskDto, req.user);
   }
 
   @Delete('/:id')

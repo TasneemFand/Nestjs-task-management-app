@@ -18,10 +18,11 @@ export class TasksService {
     return found;
   }
 
-  async getTasks(filter: TasksFilterDto): Promise<Task[]> {
+  async getTasks(filter: TasksFilterDto, user: any): Promise<Task[]> {
     const { search, status } = filter;
     if (Object.keys(filter).length) {
       return this.taskModel.find({
+        userId: user._id,
         ...(status && { status: status }),
         ...(search && {
           $or: [
@@ -32,12 +33,15 @@ export class TasksService {
       });
     }
 
-    return this.taskModel.find();
+    return this.taskModel.find({
+      userId: user._id,
+    });
   }
 
-  async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
+  async createTask(createTaskDto: CreateTaskDto, user: any): Promise<Task> {
     const createdTask = new this.taskModel({
       ...createTaskDto,
+      userId: user._id,
       status: TaskStatus.OPEN,
     });
     return createdTask.save();
