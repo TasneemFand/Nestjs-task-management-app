@@ -17,4 +17,10 @@ export class AuthController {
   signup(@Body() authCredentials: AuthDto) {
     return this.authService.signUp(authCredentials);
   }
+
+  @Post('/signIn')
+  @UsePipes(ValidationPipe)
+  signin(@Body() authCredentials: AuthDto) {
+    return this.authService.signIn(authCredentials);
+  }
 }
