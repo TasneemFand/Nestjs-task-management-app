@@ -1,63 +1,59 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Task, TaskStatus } from './task.model';
-import * as uuid from 'uuid';
+import { InjectModel } from '@nestjs/mongoose';
+import { Task } from './task.schema';
+import { Model } from 'mongoose';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { TaskStatus } from './task-status.enum';
 import { TasksFilterDto } from './dto/get-task-filter.dto';
 
 @Injectable()
 export class TasksService {
-  private tasks: Task[] = [];
+  constructor(@InjectModel(Task.name) private taskModel: Model<Task>) {}
 
-  getAllTasks(): Task[] {
-    return this.tasks;
-  }
-
-  getTaskById(id: string): Task {
-    const found = this.tasks.find((task) => task.id === id);
+  async getTaskById(id: string): Promise<Task> {
+    const found = await this.taskModel.findById(id);
     if (!found) {
       throw new NotFoundException(`Task with id ${id} not found!`);
     }
     return found;
   }
 
-  getTaskswithFilter(filter: TasksFilterDto) {
+  async getTasks(filter: TasksFilterDto): Promise<Task[]> {
     const { search, status } = filter;
-
-    let tasks = this.getAllTasks();
-
-    if (status) {
-      tasks = tasks.filter((task) => task.status === status);
+    if (Object.keys(filter).length) {
+      return this.taskModel.find({
+        ...(status && { status: status }),
+        ...(search && {
+          $or: [
+            { title: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } },
+          ],
+        }),
+      });
     }
 
-    if (search) {
-      tasks = tasks.filter(
-        (task) =>
-          task.title.includes(search) || task.description.includes(search),
-      );
-    }
-
-    return tasks;
+    return this.taskModel.find();
   }
 
-  createTask(createTaskDto: CreateTaskDto): Task {
-    const task: Task = {
-      id: uuid(),
-      title: createTaskDto.title,
-      description: createTaskDto.description,
+  async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
+    const createdTask = new this.taskModel({
+      ...createTaskDto,
       status: TaskStatus.OPEN,
-    };
-    this.tasks.push(task);
-    return task;
+    });
+    return createdTask.save();
   }
 
-  deleteTask(id: string): void {
-    const found = this.getTaskById(id);
-    this.tasks = this.tasks.filter((task) => task.id !== found.id);
+  async deleteTask(id: string): Promise<void> {
+    const found = await this.getTaskById(id);
+    if (found) {
+      await this.taskModel.findOneAndDelete({ _id: id });
+    }
   }
 
-  updateTaskStatus(id: string, status: TaskStatus): Task {
-    const task = this.getTaskById(id);
-    task.status = status;
-    return task;
+  async updateTaskStatus(id: string, status: TaskStatus): Promise<Task> {
+    await this.getTaskById(id);
+    return this.taskModel.findByIdAndUpdate(id, {
+      status,
+    });
   }
 }

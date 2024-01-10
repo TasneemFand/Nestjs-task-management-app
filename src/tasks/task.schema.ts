@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { TaskStatus } from './task.model';
+import { TaskStatus } from './task-status.enum';
 
 export type TaskDocument = HydratedDocument<Task>;
 
@@ -10,7 +10,7 @@ export class Task {
   title: string;
 
   @Prop({ required: true })
-  description: number;
+  description: string;
 
   @Prop()
   status: TaskStatus;
