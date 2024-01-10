@@ -11,6 +11,7 @@ import { Model } from 'mongoose';
 import { AuthDto } from './dto/auth.dto';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import { JWTPayload } from './jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -51,8 +52,11 @@ export class AuthService {
         user,
       );
       if (isValidPassword) {
-        const payload = { username: authCredentials.username };
-        const accessToken = await this.jwtService.sign(payload);
+        const payload: JWTPayload = {
+          sub: user._id as unknown as string,
+          username: user.username,
+        };
+        const accessToken = await this.jwtService.signAsync(payload);
         return { accessToken };
       }
       throw new UnauthorizedException('Invalid Credentials');
